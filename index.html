@@ -1,0 +1,462 @@
+<html>
+
+<head>
+    <title>Bonus Task - Tic Tac Toe</title>
+</head>
+<style>
+    :root{
+        --cell-size: 120px;
+        --color: gray;
+        --color-set: black;
+        --colorg-set: green;
+        --l: 15px;
+    }
+    body{
+        margin: 0;
+    }
+    .board{
+        width: 90vw;
+        height: 400px;
+        margin-top: 80px;
+        display: grid;
+        justify-content: center;
+        align-content: center;
+        /* justify-items: center; */
+        /* align-items: center; */
+        grid-template-columns: repeat(3, auto);
+    }
+    .cell{
+        width: var(--cell-size);
+        height: var(--cell-size);
+        border: 8px solid rgb(19, 19, 19);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        cursor: pointer;
+    }
+    .cell:nth-child(1), .cell:nth-child(2), .cell:nth-child(3) {
+        border-top: none;
+    }
+
+    .cell:nth-child(1), .cell:nth-child(4), .cell:nth-child(7){
+        border-left: none;
+    }
+
+    .cell:nth-child(3), .cell:nth-child(6), .cell:nth-child(9){
+        border-right: none;
+    }
+
+    .cell:nth-child(7), .cell:nth-child(8), .cell:nth-child(9){
+        border-bottom: none;
+    }
+
+    .cell.x, .cell.circle{
+        cursor: not-allowed;
+    }
+
+/* for cross hover */
+.board.x .cell:not(.circle):not(.x):hover {
+	background: linear-gradient(to top right, transparent calc(50% - var(--l) / 2), var(--color) calc(50% - var(--l) / 2) calc(50% + var(--l) / 2), transparent calc(50% + var(--l) / 2)),
+				linear-gradient(to bottom right, transparent calc(50% - var(--l) / 2), var(--color) calc(50% - var(--l) / 2) calc(50% + var(--l) / 2), transparent calc(50% + var(--l) / 2));
+	background-size: 80% 80%;
+	background-repeat: no-repeat;
+	background-position: center;
+}
+
+/* for cross normal */
+.cell:not(.circle).x {
+	background: linear-gradient(to top right, transparent calc(50% - var(--l) / 2), var(--color-set) calc(50% - var(--l) / 2) calc(50% + var(--l) / 2), transparent calc(50% + var(--l) / 2)),
+				linear-gradient(to bottom right, transparent calc(50% - var(--l) / 2), var(--color-set) calc(50% - var(--l) / 2) calc(50% + var(--l) / 2), transparent calc(50% + var(--l) / 2));
+	background-size: 80% 80%;
+	background-repeat: no-repeat;
+	background-position: center;
+}
+
+.cell:not(.greeno).greenx {
+	background: linear-gradient(to top right, transparent calc(50% - var(--l) / 2), var(--colorg-set) calc(50% - var(--l) / 2) calc(50% + var(--l) / 2), transparent calc(50% + var(--l) / 2)),
+				linear-gradient(to bottom right, transparent calc(50% - var(--l) / 2), var(--colorg-set) calc(50% - var(--l) / 2) calc(50% + var(--l) / 2), transparent calc(50% + var(--l) / 2));
+	background-size: 80% 80%;
+	background-repeat: no-repeat;
+	background-position: center;
+}
+
+/* hover circle */
+.board.circle .cell:not(.circle):not(.x):hover {	
+	background: radial-gradient(var(--color) 60%, transparent 60%);
+}
+
+
+
+/* normal circle */
+.cell:not(.x).circle {
+	background: radial-gradient(var(--color-set) 60%, transparent 60%);
+}
+
+.cell:not(.greenx).greeno {
+	background: radial-gradient(var(--colorg-set) 60%, transparent 60%);
+}
+
+
+
+
+
+.winning-message {
+	display: none;
+	/* position: fixed; */
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	/* background-color: var(--color-set); */
+	justify-content: center;
+	align-items: center;
+	color: rgb(28, 27, 27);
+	font-size: 5rem;
+	font-family: 'Courier New', Courier, monospace;
+	flex-direction: column;
+}
+.winning-message button {
+	border-radius: 10px;
+	font-size: 3rem;
+	background-color: white;
+	border: 1px solid var(--color-set);
+	padding: .25em .5em;
+	cursor: pointer;
+}
+
+.winning-message button:hover {
+	background-color: var(--color-set);
+	color: white;
+	border-color: white;
+}
+
+.winning-message.show {
+	display: flex;
+}
+
+</style>
+
+<body>
+    <div class="board" id="board">
+        <div class="cell" id="first" data-cell></div>
+        <div class="cell" data-cell></div>
+        <div class="cell" data-cell></div>
+        <div class="cell" data-cell></div>
+        <div class="cell" data-cell></div>
+        <div class="cell" data-cell></div>
+        <div class="cell" data-cell></div>
+        <div class="cell" data-cell></div>
+        <div class="cell" data-cell></div>
+    </div>
+    <div class="winning-message" id="winningMessage">
+        <div id="winningMessageText"></div>
+        <button id="restartButton">Restart</button>
+    </div>
+    <script>
+        const PLAYER_X_CLASS = `x`;
+        const PLAYER_O_CLASS = `circle`;
+        const PLAYER_X_GREEN= `greenx`;
+        const PLAYER_O_GREEN = `greeno`;
+
+        const WINNING_COMBINATIONS = [
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8],
+            [0, 3, 6],
+            [1, 4, 7],
+            [2, 5, 8],
+            [0, 4, 8],
+            [2, 4, 6]
+        ];
+        const WINNING_COMBINATION_CASE_1 = [
+            [0, 1, 2],
+        ];
+        const WINNING_COMBINATION_CASE_2 = [
+            [3, 4, 5],
+        ];
+        const WINNING_COMBINATION_CASE_3 = [
+            [6, 7, 8],
+        ];
+        const WINNING_COMBINATION_CASE_4 = [
+            [0, 3, 6],
+
+        ];
+        const WINNING_COMBINATION_CASE_5 = [
+            [1, 4, 7],
+        ];
+        const WINNING_COMBINATION_CASE_6 = [
+            [2, 5, 8],
+        ];
+        const WINNING_COMBINATION_CASE_7 = [
+            [0, 4, 8],
+        ];
+        const WINNING_COMBINATION_CASE_8 = [
+            [2, 4, 6]
+        ];
+
+        const cellElements = document.querySelectorAll('[data-cell]');
+        const boardElement = document.getElementById(`board`);
+        const winningMessageElement = document.getElementById(`winningMessage`);
+        const restartButton = document.getElementById(`restartButton`);
+        const winningMessageTextElement = document.getElementById('winningMessageText');
+        let isPlayer_O_Turn = false;
+
+
+       
+
+
+
+        startGame()
+
+
+        restartButton.addEventListener(`click`, startGame)
+
+        function startGame() {
+            isPlayer_O_Turn = false;
+            cellElements.forEach(cell => {
+                cell.classList.remove(PLAYER_X_CLASS)
+                cell.classList.remove(PLAYER_O_CLASS)
+                cell.classList.remove(PLAYER_X_GREEN)
+                cell.classList.remove(PLAYER_O_GREEN)
+                cell.removeEventListener(`click`, handleCellClick)
+                cell.addEventListener(`click`, handleCellClick, { once: true })
+
+      
+   
+            })
+
+            setBoardHoverClass()
+            winningMessageElement.classList.remove(`show`)
+        }
+        
+
+        function handleCellClick(e) {
+            const cell = e.target;
+            console.log(e.target);
+         
+
+      
+            const currentClass = isPlayer_O_Turn ? PLAYER_O_CLASS : PLAYER_X_CLASS;
+            placeMark(cell, currentClass);
+         
+            if (checkWin(currentClass)) {
+                endGame(false)
+            } else if (isDraw()) {
+                endGame(true);
+            } else {
+                swapTurns();
+                setBoardHoverClass();
+            }
+        }
+
+        function endGame(draw){
+            if(draw){
+                winningMessageTextElement.innerText = "It's a draw!"
+            }else{
+                paintGreen();
+                winningMessageTextElement.innerText = `Player with ${isPlayer_O_Turn ? "O's" : "X's"} wins!`
+            }
+            winningMessageElement.classList.add('show')
+            }
+        
+
+        
+        function isDraw() {
+            return [...cellElements].every(cell => {
+                return cell.classList.contains(PLAYER_X_CLASS) || cell.classList.contains(PLAYER_O_CLASS)
+            })
+        }
+
+        function placeMark(cell, currentClass){
+            cell.classList.add(currentClass)
+        }
+
+        function swapTurns(){
+            isPlayer_O_Turn=!isPlayer_O_Turn;
+        }
+
+        function setBoardHoverClass(){
+            boardElement.classList.remove(PLAYER_X_CLASS)
+            boardElement.classList.remove(PLAYER_O_CLASS)
+            if (isPlayer_O_Turn){
+                boardElement.classList.add(PLAYER_O_CLASS)
+            }else{
+                boardElement.classList.add(PLAYER_X_CLASS)
+            }
+        }
+
+        function checkWin(currentClass){
+            return WINNING_COMBINATIONS.some(combination =>{
+                return combination.every(index =>{
+                    return cellElements[index].classList.contains(currentClass)
+                })
+
+            })
+        }
+
+        function wincase1(currentClass){
+            return WINNING_COMBINATION_CASE_1.some(combination =>{
+                return combination.every(index =>{
+                    return cellElements[index].classList.contains(currentClass)
+                })
+
+            })
+        }
+
+        function wincase2(currentClass){
+            return WINNING_COMBINATION_CASE_2.some(combination =>{
+                return combination.every(index =>{
+                    return cellElements[index].classList.contains(currentClass)
+                })
+
+            })
+        }
+
+        function wincase3(currentClass){
+            return WINNING_COMBINATION_CASE_3.some(combination =>{
+                return combination.every(index =>{
+                    return cellElements[index].classList.contains(currentClass)
+                })
+
+            })
+        }
+
+        function wincase4(currentClass){
+            return WINNING_COMBINATION_CASE_4.some(combination =>{
+                return combination.every(index =>{
+                    return cellElements[index].classList.contains(currentClass)
+                })
+
+            })
+        }
+
+        function wincase5(currentClass){
+            return WINNING_COMBINATION_CASE_5.some(combination =>{
+                return combination.every(index =>{
+                    return cellElements[index].classList.contains(currentClass)
+                })
+
+            })
+        }
+
+        function wincase6(currentClass){
+            return WINNING_COMBINATION_CASE_6.some(combination =>{
+                return combination.every(index =>{
+                    return cellElements[index].classList.contains(currentClass)
+                })
+
+            })
+        }
+
+        function wincase7(currentClass){
+            return WINNING_COMBINATION_CASE_7.some(combination =>{
+                return combination.every(index =>{
+                    return cellElements[index].classList.contains(currentClass)
+                })
+
+            })
+        }
+
+        function wincase8(currentClass){
+            return WINNING_COMBINATION_CASE_8.some(combination =>{
+                return combination.every(index =>{
+                    return cellElements[index].classList.contains(currentClass)
+                })
+
+            })
+        }
+
+        
+
+        function paintGreen(){
+            const currentClass = isPlayer_O_Turn ? PLAYER_O_CLASS : PLAYER_X_CLASS;
+            console.log(`Time for paint!`)
+            const greenClass = isPlayer_O_Turn ? PLAYER_O_GREEN : PLAYER_X_GREEN;
+
+            if(wincase1(currentClass)){
+                console.log(`case 1`)
+                let greencell=  document.querySelector(".cell:nth-child(1)");
+                placeMark(greencell, greenClass);
+                greencell=  document.querySelector(".cell:nth-child(2)");
+                placeMark(greencell, greenClass);
+                greencell=  document.querySelector(".cell:nth-child(3)");
+                placeMark(greencell, greenClass);
+                
+            }
+            if(wincase2(currentClass)){
+                console.log(`case 2`)
+                let greencell=  document.querySelector(".cell:nth-child(4)");
+                placeMark(greencell, greenClass);
+                greencell=  document.querySelector(".cell:nth-child(5)");
+                placeMark(greencell, greenClass);
+                greencell=  document.querySelector(".cell:nth-child(6)");
+                placeMark(greencell, greenClass);
+            }
+            if(wincase3(currentClass)){
+                console.log(`case 3`)
+                let greencell=  document.querySelector(".cell:nth-child(7)");
+                placeMark(greencell, greenClass);
+                greencell=  document.querySelector(".cell:nth-child(8)");
+                placeMark(greencell, greenClass);
+                greencell=  document.querySelector(".cell:nth-child(9)");
+                placeMark(greencell, greenClass);
+            }
+            if(wincase4(currentClass)){
+                console.log(`case 4`)
+                let greencell=  document.querySelector(".cell:nth-child(1)");
+                placeMark(greencell, greenClass);
+                greencell=  document.querySelector(".cell:nth-child(4)");
+                placeMark(greencell, greenClass);
+                greencell=  document.querySelector(".cell:nth-child(7)");
+                placeMark(greencell, greenClass);
+            }
+            if(wincase5(currentClass)){
+                console.log(`case 5`)
+                let greencell=  document.querySelector(".cell:nth-child(2)");
+                placeMark(greencell, greenClass);
+                greencell=  document.querySelector(".cell:nth-child(5)");
+                placeMark(greencell, greenClass);
+                greencell=  document.querySelector(".cell:nth-child(8)");
+                placeMark(greencell, greenClass);
+            }
+
+            if(wincase6(currentClass)){
+                console.log(`case 6`)
+                let greencell=  document.querySelector(".cell:nth-child(3)");
+                placeMark(greencell, greenClass);
+                greencell=  document.querySelector(".cell:nth-child(6)");
+                placeMark(greencell, greenClass);
+                 greencell=  document.querySelector(".cell:nth-child(9)");
+                 placeMark(greencell, greenClass);
+            }
+
+            if(wincase7(currentClass)){
+                console.log(`case 7`)
+                let greencell=  document.querySelector(".cell:nth-child(1)");
+                placeMark(greencell, greenClass);
+                greencell=  document.querySelector(".cell:nth-child(5)");
+                placeMark(greencell, greenClass);
+                greencell=  document.querySelector(".cell:nth-child(9)");
+                placeMark(greencell, greenClass);
+            }
+
+            if(wincase8(currentClass)){
+                console.log(`case 8`)
+                let greencell=  document.querySelector(".cell:nth-child(3)");
+                placeMark(greencell, greenClass);
+                greencell=  document.querySelector(".cell:nth-child(5)");
+                placeMark(greencell, greenClass);
+                greencell=  document.querySelector(".cell:nth-child(7)");
+                placeMark(greencell, greenClass);
+                
+            }
+            
+
+        }
+
+
+    </script>
+</body>
+
+</html>
